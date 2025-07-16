@@ -22,7 +22,7 @@
 #include "QOIWrapper.h"
 #include "PSDWrapper.h"
 #include "MaxImageDef.h"
-
+#include "DDSReader.h"
 
 using namespace Gdiplus;
 
@@ -79,6 +79,8 @@ static EImageFormat GetImageFormat(LPCTSTR sFileName) {
 		return IF_QOI;
 	} else if (header[0] == '8' && header[1] == 'B' && header[2] == 'P' && header[3] == 'S') {
 		return IF_PSD;
+	} else if (header[0] == 'D' && header[1] == 'D' && header[2] == 'S' && header[3] == ' ') {
+		return IF_DDS;
 	}
 
 	// default fallback if no matches based on magic bytes
@@ -385,6 +387,14 @@ void CImageLoadThread::ProcessRequest(CRequestBase& request) {
 			DeleteCachedJxlDecoder();
 			DeleteCachedAvifDecoder();
 			ProcessReadWICRequest(&rq);
+			break;
+		case IF_DDS:
+			DeleteCachedGDIBitmap();
+			DeleteCachedWebpDecoder();
+			DeleteCachedPngDecoder();
+			DeleteCachedJxlDecoder();
+			DeleteCachedAvifDecoder();
+			ProcessReadDDSRequest(&rq);
 			break;
 		default:
 			// try with GDI+
@@ -1060,6 +1070,12 @@ void CImageLoadThread::ProcessReadGDIPlusRequest(CRequest * request) {
 	if (!isAnimatedGIF) {
 		DeleteCachedGDIBitmap();
 	}
+}
+
+void CImageLoadThread::ProcessReadDDSRequest(CRequest* request) {
+	const wchar_t* sFileName;
+	sFileName = (const wchar_t*)request->FileName;
+	request->Image = CReaderDDS::ReadDdsImage(sFileName, request->OutOfMemory);
 }
 
 static unsigned char* alloc(int sizeInBytes) {
