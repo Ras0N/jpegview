@@ -4,6 +4,7 @@
 #include "Helpers.h"
 #include "DirectoryWatcher.h"
 #include "Shlwapi.h"
+#include <map>
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Helpers
@@ -128,6 +129,41 @@ void CFileDesc::SetModificationDate(const FILETIME& lastModDate) {
 static const int cnNumEndingsInternal = 18;
 static const TCHAR* csFileEndingsInternal[cnNumEndingsInternal] = {_T("jpg"), _T("jpeg"), _T("jfif"), _T("bmp"), _T("png"),
 	_T("tif"), _T("tiff"), _T("gif"), _T("webp"), _T("jxl"), _T("avif"), _T("heif"), _T("heic"), _T("tga"), _T("qoi"), _T("psd"), _T("psb"),_T("dds")};
+
+// new format structure.
+LPCTSTR fmt_desc[] = {
+	_T("JPEG image format"),
+	_T("BMP image"),
+	_T("PNG image"),
+	_T("TIFF image"),
+	_T("GIF image"),
+	_T("WEBP image"),
+	_T("JPEG XL image"),
+	_T("AVIF image"),
+	_T("HEIF image"),
+	_T("Targa image"),
+	_T("Quite OK image"),
+	_T("Photoshop image"),
+	_T("DDS image")
+};
+uint32_t fmt_group_len = sizeof(fmt_desc)/sizeof(fmt_desc[0]);
+LPCTSTR fmt_ext[] = {
+	_T("*.jpg;*.jpeg;*.jfif"),
+	_T("*.bmp"),
+	_T("*.png"),
+	_T("*.tif;*.tiff"),
+	_T("*.gif"),
+	_T("*.webp"),
+	_T("*.jxl"),
+	_T("*.avif"),
+	_T("*.heif;*.heic"),
+	_T("*.tga"),
+	_T("*.qoi"),
+	_T("*.psd;*.psb"),
+	_T("*.dds")
+};
+
+
 // supported camera RAW formats
 static const TCHAR* csFileEndingsRAW = _T("*.pef;*.dng;*.crw;*.nef;*.cr2;*.mrw;*.rw2;*.orf;*.x3f;*.arw;*.kdc;*.nrw;*.dcr;*.sr2;*.raf");
 
@@ -251,6 +287,60 @@ CString CFileList::GetSupportedFileEndings() {
 		if (i+1 < nNumEndings) sList += _T(";");
 	}
 	return sList;
+}
+
+CString CFileList::GetOpenFileNameFilterStr() {
+	CString filter;
+	CString all_format;
+	for (uint32_t i = 0; i < fmt_group_len; i++) {
+		filter += fmt_desc[i];
+		filter += " (";
+		filter += fmt_ext[i];
+		filter += ')';
+		filter += '\0';
+		filter += fmt_ext[i];
+		filter += '\0';
+		all_format += fmt_ext[i];
+		all_format += ';';
+	}
+	// We also should add WIC support format.
+	LPCTSTR sFileEndingsWIC = CSettingsProvider::This().FilesProcessedByWIC();
+	if (_tcslen(sFileEndingsWIC) > 2 && WICPresentGuarded()) {
+		filter += "WIC support format";
+		filter += " (";
+		filter += sFileEndingsWIC;
+		filter += ')';
+		filter += '\0';
+		filter += sFileEndingsWIC;
+		all_format += sFileEndingsWIC;
+		filter += '\0';
+	}
+	// and all supported raw formats;
+	filter += "RAW Format";
+	filter += " (";
+	filter += CSettingsProvider::This().FileEndingsRAW();
+	filter += ')';
+	filter += '\0';
+	filter += CSettingsProvider::This().FileEndingsRAW();
+	all_format += CSettingsProvider::This().FileEndingsRAW();
+	filter += '\0';
+	
+	// all supported format:
+	filter += "ALL support format";
+	filter += " (";
+	filter += all_format;
+	filter += ')';
+	filter += '\0';
+	filter += all_format;
+	filter += '\0';
+	
+	// all files
+	filter += "ALL files (*.*)";
+	filter += '\0';
+	filter += _T("*.*");
+	filter += '\0';
+	filter += '\0';
+	return filter;
 }
 
 void CFileList::Reload(LPCTSTR sFileName, bool clearForwardHistory) {

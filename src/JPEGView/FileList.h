@@ -66,6 +66,9 @@ public:
 	// Gets a list of all supported file endings, separated by semicolon
 	static CString GetSupportedFileEndings();
 
+	// Get OpenFileName Filters From known image format.
+	static CString GetOpenFileNameFilterStr();
+
 	// Reload file list for given file, if NULL for current file
 	void Reload(LPCTSTR sFileName = NULL, bool clearForwardHistory = true);
 

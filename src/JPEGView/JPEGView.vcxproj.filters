@@ -192,9 +192,6 @@
     <ClCompile Include="CropSizeDlg.cpp">
       <Filter>Source Files\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="FileOpenDialog.cpp">
-      <Filter>Source Files\Dialogs</Filter>
-    </ClCompile>
     <ClCompile Include="MainDlg.cpp">
       <Filter>Source Files\Dialogs</Filter>
     </ClCompile>
@@ -453,9 +450,6 @@
       <Filter>Header Files\Dialogs</Filter>
     </ClInclude>
     <ClInclude Include="CropSizeDlg.h">
-      <Filter>Header Files\Dialogs</Filter>
-    </ClInclude>
-    <ClInclude Include="FileOpenDialog.h">
       <Filter>Header Files\Dialogs</Filter>
     </ClInclude>
     <ClInclude Include="MainDlg.h">

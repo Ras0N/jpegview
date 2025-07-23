@@ -388,7 +388,6 @@
     <ClCompile Include="BatchCopyDlg.cpp" />
     <ClCompile Include="CropCtl.cpp" />
     <ClCompile Include="CropSizeDlg.cpp" />
-    <ClCompile Include="FileOpenDialog.cpp" />
     <ClCompile Include="MainDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -480,7 +479,6 @@
     <ClInclude Include="BatchCopyDlg.h" />
     <ClInclude Include="CropCtl.h" />
     <ClInclude Include="CropSizeDlg.h" />
-    <ClInclude Include="FileOpenDialog.h" />
     <ClInclude Include="MainDlg.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
