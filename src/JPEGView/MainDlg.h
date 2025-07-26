@@ -224,6 +224,7 @@ public:
 
 private:
 
+	LOGFONT lf_font;
 	CString m_sStartupFile; // file passed on command line
 	int m_nAutoStartSlideShow; // if positive: Auto start slide show with given interval in seconds, passed on command line
 	bool m_bAutoExit;

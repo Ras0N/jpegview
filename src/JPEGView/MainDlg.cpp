@@ -284,6 +284,7 @@ CMainDlg::CMainDlg(bool bForceFullScreen) {
 	m_pKeyMap = new CKeyMap(); // routine to load the keymap, it's not as simple as just loading one file anymore, but all logic handled by CKeyMap
 	m_pPrintImage = new CPrintImage(CSettingsProvider::This().PrintMargin(), CSettingsProvider::This().DefaultPrintWidth());
 	m_pHelpDlg = NULL;
+
 }
 
 CMainDlg::~CMainDlg() {
@@ -312,6 +313,22 @@ LRESULT CMainDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
 
 	// set the scaling of the screen (DPI) compared to 96 DPI (design value)
 	CPaintDC dc(this->m_hWnd);
+
+	// enable CDC font anti-alias function
+	CFont font = dc.GetCurrentFont();
+	font.GetLogFont(&lf_font);
+	lf_font.lfQuality = ANTIALIASED_QUALITY;
+	NONCLIENTMETRICS ncm = { 0, };
+	ncm.cbSize = sizeof(NONCLIENTMETRICS);
+	if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0)) {
+		ZeroMemory(&lf_font.lfFaceName, sizeof(lf_font.lfFaceName));
+		lstrcpy(lf_font.lfFaceName, ncm.lfMessageFont.lfFaceName);
+	}
+	//try to get scale factor form user screen ...
+	double scale = (double)GetDeviceCaps(dc, LOGPIXELSY) / 96.0;
+	lf_font.lfHeight *= scale;
+	lf_font.lfWeight = FW_NORMAL;
+	
 	HelpersGUI::ScreenScaling = ::GetDeviceCaps(dc, LOGPIXELSX) / 96.0f;
 
 	::SetClassLongPtr(m_hWnd, GCLP_HCURSOR, NULL);
@@ -456,6 +473,11 @@ LRESULT CMainDlg::OnPaint(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, B
 	}
 
 	CPaintDC dc(m_hWnd);
+	//select font with anti-alias enabled.
+	CFont newfont;
+	newfont.CreateFontIndirect(&lf_font);
+	dc.SelectFont(newfont);
+
 	m_dRealizedZoom = 1.0;
 
 	this->GetClientRect(&m_clientRect);
@@ -1110,7 +1132,7 @@ LRESULT CMainDlg::OnTimer(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL&
 		}
 		// Goto next image if no other messages to process are pending
 		if (!::PeekMessage(&msg, this->m_hWnd, 0, 0, PM_NOREMOVE)) {
-			int nRealDisplayTimeMs = ::GetTickCount() - m_nLastSlideShowImageTickCount;
+			int nRealDisplayTimeMs = ::GetTickCount64() - m_nLastSlideShowImageTickCount;
 			if (m_nCurrentTimeout > 250 && wParam == SLIDESHOW_TIMER_EVENT_ID) {
 				if (m_nCurrentTimeout - nRealDisplayTimeMs > 100) {
 					// restart timer
@@ -1124,7 +1146,7 @@ LRESULT CMainDlg::OnTimer(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL&
 				AnimateTransition();
 			}
 			if (wParam != ANIMATION_TIMER_EVENT_ID) {
-				m_nLastSlideShowImageTickCount = ::GetTickCount();
+				m_nLastSlideShowImageTickCount = ::GetTickCount64();
 			}
 		}
 	}
@@ -2961,7 +2983,7 @@ void CMainDlg::StartSlideShowTimer(int nMilliSeconds) {
 	m_nCurrentTimeout = nMilliSeconds;
 	::SetTimer(this->m_hWnd, SLIDESHOW_TIMER_EVENT_ID, nMilliSeconds, NULL);
 	m_pNavPanelCtl->EndNavPanelAnimation();
-	m_nLastSlideShowImageTickCount = ::GetTickCount();
+	m_nLastSlideShowImageTickCount = ::GetTickCount64();
 }
 
 void CMainDlg::StopSlideShowTimer(void) {
@@ -3462,7 +3484,7 @@ void CMainDlg::AnimateTransition() {
 	blendFunc.AlphaFormat = 0;
 	float fAlphaStep = 255.0f / nSteps;
 
-	DWORD lastTime = ::GetTickCount();
+	DWORD lastTime = ::GetTickCount64();
 	for (int i = 0; i <= nSteps; i++) {
 		switch (m_eTransitionEffect)
 		{
@@ -3564,7 +3586,7 @@ void CMainDlg::AnimateTransition() {
 			break;
 		}
 		}
-		DWORD time = ::GetTickCount();
+		DWORD time = ::GetTickCount64();
 		if (time - lastTime < nFrameTimeMs) {
 			::Sleep(nFrameTimeMs - (time - lastTime));
 		}
@@ -3602,18 +3624,18 @@ void CMainDlg::StartAnimation() {
 	int nNewFrameTime = max(10, m_pCurrentImage->FrameTimeMs());
 	::SetTimer(this->m_hWnd, ANIMATION_TIMER_EVENT_ID, nNewFrameTime, NULL);
 	m_pNavPanelCtl->EndNavPanelAnimation();
-	m_nLastSlideShowImageTickCount = ::GetTickCount();
+	m_nLastSlideShowImageTickCount = ::GetTickCount64();
 	m_nLastAnimationOffset = 0;
-	m_nExpectedNextAnimationTickCount = ::GetTickCount() + nNewFrameTime;
+	m_nExpectedNextAnimationTickCount = ::GetTickCount64() + nNewFrameTime;
 }
 
 void CMainDlg::AdjustAnimationFrameTime() {
 	// restart timer with new frame time
 	::KillTimer(this->m_hWnd, ANIMATION_TIMER_EVENT_ID);
-	m_nLastAnimationOffset += ::GetTickCount() - m_nExpectedNextAnimationTickCount;
+	m_nLastAnimationOffset += ::GetTickCount64() - m_nExpectedNextAnimationTickCount;
 	m_nLastAnimationOffset = min(m_nLastAnimationOffset, max(100, m_pCurrentImage->FrameTimeMs())); // prevent offset from getting too big
 	int nNewFrameTime = max(10, m_pCurrentImage->FrameTimeMs() - max(0, m_nLastAnimationOffset));
-	m_nExpectedNextAnimationTickCount = ::GetTickCount() + max(10, m_pCurrentImage->FrameTimeMs());
+	m_nExpectedNextAnimationTickCount = ::GetTickCount64() + max(10, m_pCurrentImage->FrameTimeMs());
 	::SetTimer(this->m_hWnd, ANIMATION_TIMER_EVENT_ID, nNewFrameTime, NULL);
 }
 
